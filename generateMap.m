@@ -46,12 +46,19 @@ function [metricToIdx, xMapMetricGrid, yMapMetricGrid, map] = generateMap(xMin, 
     [xSinkGrid, ySinkGrid] = meshgrid(xSinkRange, ySinkRange);
     zSinkRaw = xSinkGrid.^2 + ySinkGrid.^2;
     zSink = sinkDepth.*((zSinkRaw./max(zSinkRaw, [], 'all')) - 1);
+    
+    numTiles = [floor(xMapIdxLen / sinkIdxLen);
+                floor(yMapIdxLen / sinkIdxLen)];
+    possibleXCenters = linspace(ceil(sinkIdxLen./2), xMapIdxLen - ceil(sinkIdxLen./2), numTiles(1));
+    possibleYCenters = linspace(ceil(sinkIdxLen./2), yMapIdxLen - ceil(sinkIdxLen./2), numTiles(2));    
+    sinkCenterIdxs = randperm(numTiles(1) * numTiles(2), numSink);
 
     % Update map for each random sink
-    for i = 1:numSink
-        % Calculate center of sink
-        xSinkCent = round(rand().*(size(map, 2) - sinkIdxLen)) + ceil(sinkIdxLen./2);
-        ySinkCent = round(rand().*(size(map, 1) - sinkIdxLen)) + ceil(sinkIdxLen./2);
+    for sinkCenterIdx = sinkCenterIdxs
+        % Calculate center of sink        
+        [row, col] = ind2sub([numTiles(1), numTiles(2)], sinkCenterIdx);
+        xSinkCent = possibleXCenters(row);
+        ySinkCent = possibleYCenters(col);
 
         % Add sink to map
         xSinkFieldRange = xSinkRange + xSinkCent;
