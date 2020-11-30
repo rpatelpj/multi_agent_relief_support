@@ -1,5 +1,5 @@
 %% Search and Rescue Controller
-function dxi = searchRescueController(x, map, agentIdxRadius, metricToIdx, fieldSize)
+function dxi = searchRescueController(x, map, agentIdxRadius, metricToIdx, fieldSize, states)
     mapSize = size(map);
     xInd = (metricToIdx .* (x - [fieldSize(1); fieldSize(3)])) + 1;
     dxi = zeros(size(x));
@@ -17,6 +17,13 @@ function dxi = searchRescueController(x, map, agentIdxRadius, metricToIdx, field
         if any(any(visibleMap ~= 0))
             dxi(:, agent) = [mean(mean(visibleXGrad(visibleXGrad ~= 0)));
                              mean(mean(visibleYGrad(visibleYGrad ~= 0)))];
+            states(:, agent) = 1;
+        else
+            inds = find(any(any(states(:, agent))));
+          if any(inds)
+              dxi(:, agent) = x(inds(1) - agent);
+          else
+              dxi(:, agent) = .2;
         end
     end
 end

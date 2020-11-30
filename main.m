@@ -5,16 +5,16 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 %% Choose Parameters
 
 % Agent
-numAgent = 3; % Number of Agents
+numAgent = 6; % Number of Agents
 A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph
 agentMetricRadius = 0.1; % Metric Radius of Visibility Disk of Agent
-
+states = zeros(1, numAgent);
 % Simulation
 contourRes = 5; % Contour Resolution
-iteration = 1000; % Total Number of Iterations
+iteration = 2000; % Total Number of Iterations
 
 % Map
-numSink = 30; % Number of Sinks
+numSink = 6; % Number of Sinks
 sinkMetricLen = 0.4; %0.2; % Metric Length of Square Sink
 sinkIdxLen = 9; % Index Length of Square Sink
 sinkDepth = 1.5; % Depth of Sink
@@ -40,7 +40,7 @@ for k = 1:iteration
     x = roboDrv.get_poses();
     xi = x(1:2, :); % Extract single integrator states
 
-    dxi = searchRescueController(xi, map, agentIdxRadius, metricToIdx, fieldSize); % Execute controller
+    dxi = searchRescueController(xi, map, agentIdxRadius, metricToIdx, fieldSize, states); % Execute controller
 
     dxu = siToUni(dxi, x); % Convert single integrator states to unicycle states
     dxu = uniClamp(dxu, x); % Impose inter-agent barrier and field boundary
