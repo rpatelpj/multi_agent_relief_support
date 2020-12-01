@@ -5,17 +5,17 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 %% Choose Parameters
 
 % Agent
-numAgent = 6; % Number of Agents
+numAgent = 3; % Number of Agents
 A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from)
-agentMetricVisibleApothem = 0.1; % Metric Radius of Visible Map of Agent
+agentMetricVisibleApothem = 0.1; % Metric Apothem of Visible Map of Agent
 
 % Simulation
 contourRes = 5; % Contour Resolution
-iteration = 2000; % Total Number of Iterations
+iteration = 1000; % Total Number of Iterations
 
 % Map
 numSink = 5; % Number of Sinks
-sinkMetricLen = 0.7; % Metric Length of Square Sink
+sinkMetricLen = 0.4; % Metric Length of Square Sink
 sinkIdxLen = 11; % Index Length of Square Sink
 sinkDepth = 1.5; % Depth of Sink
 
@@ -23,9 +23,8 @@ sinkDepth = 1.5; % Depth of Sink
 
 fieldDim = ARobotarium.boundaries; % Field Dimensions (xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax)
 [map, xMapMetricGrid, yMapMetricGrid, metricToIdx] = generateMap(fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4), numSink, sinkMetricLen, sinkIdxLen, sinkDepth); % Map (y, x)
-agentMetricPos0 = generateInitialPoses(numAgent, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4)); % Agents' Initial Pose (x, y, theta)
-agentState = zeros(1, numAgent); % Agents' State
-agentIdxVisibleApothem = floor(agentMetricVisibleApothem.*metricToIdx) + 1; % Index Radius of Visible Map of Agent
+[agentMetricPos0, agentState] = generateInitialConditions(numAgent, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4)); % Agents' Initial Conditions
+agentIdxVisibleApothem = floor(agentMetricVisibleApothem.*metricToIdx) + 1; % Index Apothem of Visible Map of Agent
 
 %% Run Driver with Robotarium
 
@@ -44,11 +43,12 @@ for k = 1:iteration
 
     for agentN = 1:numAgent
         agentNMetricPosi = agentMetricPosi(1:2, agentN);
+        agentNMetricPos0i = agentMetricPos0(1:2, agentN);
         agentAdjacentN = find(A(:, agentN) == 1); % Get set of agents adjacent to agent N
         visibleMapN = readSensorSim(agentNMetricPosi, agentIdxVisibleApothem, map, fieldDim(1), fieldDim(3), metricToIdx); % Extract visible disk of agent
-        [agentMetricVelNi, agentNState] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentMetricPosi, agentState, sinkMetricLen); % Execute controller
-        agentMetricVeli(:, agentN) = agentMetricVelNi;
+        [agentNState, agentMetricVelNi] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0i, agentState, agentMetricPosi, fieldDim(3), fieldDim(4), agentMetricVisibleApothem, sinkMetricLen); % Execute controller
         agentState(agentN) = agentNState;
+        agentMetricVeli(:, agentN) = agentMetricVelNi;
     end
 
     agentMetricVelu = siToUni(agentMetricVeli, agentMetricPosu); % Convert single integrator to unicycle
