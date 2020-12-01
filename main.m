@@ -5,16 +5,16 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 %% Choose Parameters
 
 % Agent
-numAgent = 3; % Number of Agents
+numAgent = 1; % Number of Agents
 A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from)
 agentMetricVisibleApothem = 0.1; % Metric Apothem of Visible Map of Agent
 
 % Simulation
 contourRes = 5; % Contour Resolution
-iteration = 1000; % Total Number of Iterations
+iteration = 2000; % Total Number of Iterations
 
 % Map
-numSink = 5; % Number of Sinks
+numSink = 1; % Number of Sinks
 sinkMetricLen = 0.4; % Metric Length of Square Sink
 sinkIdxLen = 11; % Index Length of Square Sink
 sinkDepth = 1.5; % Depth of Sink

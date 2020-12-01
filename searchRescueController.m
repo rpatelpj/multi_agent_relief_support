@@ -65,7 +65,7 @@ function [agentNState, agentMetricVelNi] = routingAlgorithm(agentN, agentNMetric
         elseif (agentNMetricPos0(1) <= 0)
             agentNState = 0.4;
             agentMetricVelNi = [speed; 0];
-        elseif (agentNMetricPos0(1) <= 0)
+        elseif (agentNMetricPos0(1) > 0)
             agentNState = 0.6;
             agentMetricVelNi = [-speed; 0];
         else
@@ -113,7 +113,7 @@ function [agentNState, agentMetricVelNi] = routingAlgorithm(agentN, agentNMetric
         elseif (agentNMetricPos0(1) <= 0)
             agentNState = 0.4;
             agentMetricVelNi = [speed; 0];
-        elseif (agentNMetricPos0(1) <= 0)
+        elseif (agentNMetricPos0(1) > 0)
             agentNState = 0.6;
             agentMetricVelNi = [-speed; 0];
         else
