@@ -8,6 +8,7 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 numAgent = 1; % Number of Agents
 A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from)
 agentMetricVisibleApothem = 0.1; % Metric Apothem of Visible Map of Agent
+gridSensor = 1;
 
 % Simulation
 contourRes = 5; % Contour Resolution
@@ -45,7 +46,7 @@ for k = 1:iteration
         agentNMetricPosi = agentMetricPosi(1:2, agentN);
         agentNMetricPos0i = agentMetricPos0(1:2, agentN);
         agentAdjacentN = find(A(:, agentN) == 1); % Get set of agents adjacent to agent N
-        visibleMapN = readSensorSim(agentNMetricPosi, agentIdxVisibleApothem, map, fieldDim(1), fieldDim(3), metricToIdx); % Extract visible disk of agent
+        visibleMapN = readSensorSim(agentNMetricPosi, agentIdxVisibleApothem, map, fieldDim(1), fieldDim(3), metricToIdx, gridSensor); % Extract visible disk of agent
         [agentNState, agentMetricVelNi] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0i, agentState, agentMetricPosi, fieldDim(3), fieldDim(4), agentMetricVisibleApothem, sinkMetricLen); % Execute controller
         agentState(agentN) = agentNState;
         agentMetricVeli(:, agentN) = agentMetricVelNi;
