@@ -7,8 +7,8 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 % Agent
 numAgent = 1; % Number of Agents
 A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from)
-agentMetricVisibleApothem = 1; % Metric Apothem of Visible Map of Agent
-gridSensor = true;
+agentMetricVisibilityApothem = 1; % Metric Apothem of Visible Map of Agent
+gridSensor = true; % If true, use grid sensor. If false, use circular sensor.
 
 % Simulation
 contourRes = 5; % Contour Resolution
@@ -25,7 +25,7 @@ sinkDepth = 1.5; % Depth of Sink
 fieldDim = ARobotarium.boundaries; % Field Dimensions (xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax)
 [map, xMapMetricGrid, yMapMetricGrid, metricToIdx] = generateMap(fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4), numSink, sinkMetricLen, sinkIdxLen, sinkDepth); % Map (y, x)
 [agentMetricPos0, agentState] = generateInitialConditions(numAgent, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4)); % Agents' Initial Conditions
-agentIdxVisibleApothem = floor(agentMetricVisibleApothem.*metricToIdx) + 1; % Index Apothem of Visible Map of Agent
+agentIdxVisibleApothem = floor(agentMetricVisibilityApothem.*metricToIdx) + 1; % Index Apothem of Visible Map of Agent
 
 %% Run Driver with Robotarium
 
@@ -35,16 +35,15 @@ roboDrv.step(); % Set agents' initial pose
 siToUni = create_si_to_uni_dynamics();
 uniClamp = create_uni_barrier_certificate_with_boundary();
 
-
 contour(xMapMetricGrid, yMapMetricGrid, map, contourRes); % Plot contour of map
 agentMetricPosi = agentMetricPosu(1:2, :); % Get agents' single integrator position
-handle = scatter(agentMetricPosi(1, :), agentMetricPosi(2, :), 'filled');
+handle = scatter(agentMetricPosi(1, :), agentMetricPosi(2, :), 'filled'); % Plot visible map of agents
 
 currentunits = get(gca,'Units');
 set(gca, 'Units', 'Points');
 axpos = get(gca,'Position');
 set(gca, 'Units', currentunits);
-markerWidth = agentMetricVisibleApothem/diff(xlim)*axpos(3); % Calculate Marker width in points
+markerWidth = agentMetricVisibilityApothem/diff(xlim)*axpos(3); % Calculate Marker width in points
 
 handle.SizeData = markerWidth^2;
 handle.MarkerFaceColor = [0.12,0.49,0.65];
@@ -62,16 +61,16 @@ for k = 1:iteration
         agentNMetricPos0i = agentMetricPos0(1:2, agentN);
         agentAdjacentN = find(A(:, agentN) == 1); % Get set of agents adjacent to agent N
         visibleMapN = readSensorSim(agentNMetricPosi, agentIdxVisibleApothem, map, fieldDim(1), fieldDim(3), metricToIdx, gridSensor); % Extract visible disk of agent
-        [agentNState, agentMetricVelNi] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0i, agentState, agentMetricPosi, fieldDim(3), fieldDim(4), agentMetricVisibleApothem, sinkMetricLen); % Execute controller
+        [agentNState, agentNMetricVeli] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0i, agentState, agentMetricPosi, fieldDim(3), fieldDim(4), agentMetricVisibilityApothem, sinkMetricLen); % Execute controller
         agentState(agentN) = agentNState;
-        agentMetricVeli(:, agentN) = agentMetricVelNi;
+        agentMetricVeli(:, agentN) = agentNMetricVeli;
     end
 
     agentMetricVelu = siToUni(agentMetricVeli, agentMetricPosu); % Convert single integrator to unicycle
     agentMetricVelu = uniClamp(agentMetricVelu, agentMetricPosu); % Impose inter-agent barrier and field boundary
     roboDrv.set_velocities(1:numAgent, agentMetricVelu);
     roboDrv.step();
-    drawnow;
+    drawnow; % Update visible map of agents
 end
 
 roboDrv.debug(); % Debug simulation; COMMENT WHEN SUBMITTING TO ROBOTARIUM
