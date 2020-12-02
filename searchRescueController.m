@@ -14,13 +14,38 @@ function [agentNState, agentMetricVelNi] = searchRescueController(agentN, agentA
             % State 0.6: Move left
             % State 0.8: Move down
         % State 1: Descend sink
-
 	% Is agent descending sink?
     if (agentState(agentN) == 1)
         agentNState = 1;
-        agentMetricVelNi = [mean(xGradVisibleMapN(xGradVisibleMapN ~= 0), 'all');
-                            mean(yGradVisibleMapN(yGradVisibleMapN ~= 0), 'all')]; % Average sink only
-
+        %xGradVisibleMapN(xGradVisibleMapN < 0) = -xGradVisibleMapN(xGradVisibleMapN < 0);
+        %yGradVisibleMapN(yGradVisibleMapN < 0) = -yGradVisibleMapN(yGradVisibleMapN < 0);
+        mapSize = size(visibleMapN);
+        visibleMapCenter = floor(mapSize / 2);
+        
+        minDist = inf;
+        minRow = 0;
+        minCol = 0;
+        for row = 1:mapSize(1)-1
+            for col = 1:mapSize(2)-1
+                if visibleMapN(row, col) ~= 0
+                    dist = (row - visibleMapCenter(1)).^2 + (col - visibleMapCenter(2)).^2;
+                    if dist < minDist
+                        minDist = dist;
+                        minRow = row;
+                        minCol = col;
+                    end
+                end
+                
+            end
+        end
+        
+        %[rad, average] = findSmallestInnerCircle(visibleMapN);
+        xVel = xGradVisibleMapN(minRow);
+        yVel = yGradVisibleMapN(minCol);
+        agentMetricVelNi = 10 * [xVel; yVel];
+%         agentMetricVelNi = [mean(xGradVisibleMapN(xGradVisibleMapN ~= 0), 'all');
+%                              mean(yGradVisibleMapN(yGradVisibleMapN ~= 0), 'all')]; % Average sink only
+        
     % If false, can agent see a sink?
     elseif any((visibleMapN ~= 0), 'all')
         agentState1Set = find(agentState == 1);
@@ -121,4 +146,21 @@ function [agentNState, agentMetricVelNi] = routingAlgorithm(agentN, agentNMetric
             agentMetricVelNi = [speed; 0];
         end
     end
+end
+
+function [rad, average] = findSmallestInnerCircle(visibleMapN)
+    map = visibleMapN ~=0;
+    sums = [];
+    n = floor(length(visibleMapN)/2);
+    for ind = 1:floor(length(visibleMapN)/2)
+        vals = sum(map(1, 1:end)) + sum(map(end, 1:end)) + sum(map(2:end-1, 1)) + sum(map(2:end-1, end));
+        sums = [sums vals];
+        map = map(ind:end-ind, ind:end-ind);
+    end
+    rad = find(sums, 1);
+    map = visibleMapN;
+    average = mean(map(n-rad, (n-rad): (n+rad))) +...
+        mean(map(n+rad, (n-rad): n+rad )) +...
+        mean(map((n-rad+1):(n+rad - 1), n-rad)) + ...
+        mean(map(n-rad+1:(n+rad - 1), (n+rad)));
 end
