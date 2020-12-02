@@ -5,24 +5,24 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 %% Choose Parameters
 
 % Agent
-numAgent = 1; % Number of Agents
+numAgent = 10; % Number of Agents
 A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from)
-agentMetricVisibilityApothem = 1; % Metric Apothem of Visible Map of Agent
-gridSensor = true; % If true, use grid sensor. If false, use circular sensor.
+agentMetricVisibilityApothem = 0.25; % Metric Apothem of Visible Map of Agent
+gridSensor = false; % If true, use grid sensor. If false, use circular sensor.
 
 % Simulation
 contourRes = 5; % Contour Resolution
 iteration = 2000; % Total Number of Iterations
 
 % Map
-numSink = 1; % Number of Sinks
-sinkMetricLen = 0.8; % Metric Length of Square Sink
+numSink = 10; % Number of Sinks
+sinkMetricLen = 0.4; % Metric Length of Square Sink
 sinkIdxLen = 11; % Index Length of Square Sink
 sinkDepth = 1.5; % Depth of Sink
 
 %% Generate Parameters
 
-fieldDim = ARobotarium.boundaries; % Field Dimensions (xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax)
+fieldDim = [-1.6, 1.6, -1, 1]; % Field Dimensions (xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax)
 [map, xMapMetricGrid, yMapMetricGrid, metricToIdx] = generateMap(fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4), numSink, sinkMetricLen, sinkIdxLen, sinkDepth); % Map (y, x)
 [agentMetricPos0, agentState] = generateInitialConditions(numAgent, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4)); % Agents' Initial Conditions
 agentIdxVisibleApothem = floor(agentMetricVisibilityApothem.*metricToIdx) + 1; % Index Apothem of Visible Map of Agent

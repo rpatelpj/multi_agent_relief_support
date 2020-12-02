@@ -11,37 +11,6 @@ function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAd
             % State 0.8: Move down
         % State 1: Descend sink
 
-%     if (agentState(agentN) == 1)
-%         agentNState = 1;
-        %xGradVisibleMapN(xGradVisibleMapN < 0) = -xGradVisibleMapN(xGradVisibleMapN < 0);
-        %yGradVisibleMapN(yGradVisibleMapN < 0) = -yGradVisibleMapN(yGradVisibleMapN < 0);
-%         mapSize = size(visibleMapN);
-%         visibleMapCenter = floor(mapSize / 2);
-        
-%         minDist = inf;
-%         minRow = 0;
-%         minCol = 0;
-%         for row = 1:mapSize(1)-1
-%             for col = 1:mapSize(2)-1
-%                 if visibleMapN(row, col) ~= 0
-%                     dist = (row - visibleMapCenter(1)).^2 + (col - visibleMapCenter(2)).^2;
-%                     if dist < minDist
-%                         minDist = dist;
-%                         minRow = row;
-%                         minCol = col;
-%                     end
-%                 end
-%                 
-%             end
-%         end
-        
-        %[rad, average] = findSmallestInnerCircle(visibleMapN);
-%         xVel = xGradVisibleMapN(minRow);
-%         yVel = yGradVisibleMapN(minCol);
-%         agentMetricVelNi = 10 * [xVel; yVel];
-%         agentMetricVelNi = [mean(xGradVisibleMapN(xGradVisibleMapN ~= 0), 'all');
-%                              mean(yGradVisibleMapN(yGradVisibleMapN ~= 0), 'all')]; % Average sink only
-
 	% Is agent descending sink?
     if (agentState(agentN) == 1) && any((visibleMapN ~= 0), 'all')
         [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
@@ -51,7 +20,7 @@ function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAd
         agentState1Set = find(agentState == 1);
         sinkKnownSet = intersect(agentState1Set, agentAdjacentN);
         agentAdjacentNDist = vecnorm(agentMetricPos(:, sinkKnownSet) - agentMetricPos(:, agentN)); % Calculate distances between agent N and agents adjacent to agent N
-        sinkMetricDiameter = sinkMetricLen.*sqrt(2);
+        sinkMetricDiameter = sqrt(2) .* sinkMetricLen;
 
         % If true, are there no agents already at a sink, or at least is there an agent not at this sink?
         % TODO: Since sink is square, sink diameter is used for threshold distance.
@@ -159,20 +128,3 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricP
         agentNMetricVel = [0; speed];
     end
 end
-
-% function [rad, average] = findSmallestInnerCircle(visibleMapN)
-%     map = visibleMapN ~=0;
-%     sums = [];
-%     n = floor(length(visibleMapN)/2);
-%     for ind = 1:floor(length(visibleMapN)/2)
-%         vals = sum(map(1, 1:end)) + sum(map(end, 1:end)) + sum(map(2:end-1, 1)) + sum(map(2:end-1, end));
-%         sums = [sums vals];
-%         map = map(ind:end-ind, ind:end-ind);
-%     end
-%     rad = find(sums, 1);
-%     map = visibleMapN;
-%     average = mean(map(n-rad, (n-rad): (n+rad))) +...
-%         mean(map(n+rad, (n-rad): n+rad )) +...
-%         mean(map((n-rad+1):(n+rad - 1), n-rad)) + ...
-%         mean(map(n-rad+1:(n+rad - 1), (n+rad)));
-% end
