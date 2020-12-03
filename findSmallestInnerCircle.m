@@ -1,5 +1,10 @@
 function [rad, sensor_reading] = findSmallestInnerCircle(visibleMapN)
+sensor_reading = zeros(2, 1);
 [~, n] = size(visibleMapN);
+yGradientMapN = diff(visibleMapN, 1, 1);
+xGradientMapN = diff(visibleMapN, 1, 2);
+yGradientMapN = [zeros(1, n); yGradientMapN];
+xGradientMapN = [zeros(n, 1) xGradientMapN ];
 % if mod(m, 2) == 0 || mod(n, 2) == 0
 %     if m > n
 %         if mod(m, 2) == 0
@@ -48,23 +53,33 @@ for i = 1:(rad+1)
         c = [center center]
         inds_mat = [r c; c r]
     elseif(i == (rad + 1))
-        r = [1 center + rad];
-        c = [1 1 center + rad center + rad];
+        r = [center-rad center + rad];
+        c = [center-rad center-rad center + rad center + rad];
         inds_mat = [r r; c];
     else
         shift = i -1;
         r = [ones(1, 2)*(center-shift) ones(1, 2)*(center+shift)];
-        c = [1 (center+rad) 1 (center+rad)];
+        c = [center-rad (center+rad) center-rad (center+rad)];
         inds_mat = [r c; c r];
     end
     vals = [];
     for ind = 1:length(inds_mat)
-         vals = [vals map(inds_mat(1, ind), inds_mat(2,ind))];
+        vals = [vals map(inds_mat(1, ind), inds_mat(2,ind))];
     end
-    end
-    vals = vals(vals~=0);
-    if any(vals, 'all')
-        sensor_reading = vals(1);
-    end
+    ind_nonzero = find(vals, 1);
     
+    if any(ind_nonzero, 'all')
+        sensor_reading = [-xGradientMapN(inds_mat(1, ind_nonzero), inds_mat(2, ind_nonzero));
+            -yGradientMapN(inds_mat(1, ind_nonzero), inds_mat(2, ind_nonzero))];
+%         unit_vec = (inds_mat(:, ind_nonzero) - [center; center])/norm(inds_mat(:, ind_nonzero) - [center; center]);
+%         sensor_reading = unit_vec*map(inds_mat(1, ind_nonzero),   inds_mat(2, ind_nonzero));
+%         sensor_reading = unit_vec;
+        break;
+        
+    end
+end
+
+gain = 3;
+sensor_reading = gain*sensor_reading;
+
 end

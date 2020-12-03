@@ -26,7 +26,9 @@ fieldDim = [-1.6, 1.6, -1, 1]; % Field Dimensions (xMapMetricMin, xMapMetricMax,
 [map, xMapMetricGrid, yMapMetricGrid, metricToIdx] = generateMap(fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4), numSink, sinkMetricLen, sinkIdxLen, sinkDepth); % Map (y, x)
 [agentMetricPos0, agentState] = generateInitialConditions(numAgent, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4)); % Agents' Initial Conditions
 agentIdxVisibleApothem = floor(agentMetricVisibilityApothem.*metricToIdx) + 1; % Index Apothem of Visible Map of Agent
-
+%%%%%% for debugging: 
+figure(5)
+symbol = ['m*', 'c*', 'k*', 'g*', 'b*', 'r*', 'md', 'cd', 'kd', 'gd'];
 %% Run Driver with Robotarium
 
 roboDrv = Robotarium('NumberOfRobots', numAgent, 'InitialConditions', agentMetricPos0);
@@ -64,8 +66,9 @@ for k = 1:iteration
         [agentNState, agentNMetricVeli] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0i, agentState, agentMetricPosi, fieldDim(3), fieldDim(4), agentMetricVisibilityApothem, sinkMetricLen); % Execute controller
         agentState(agentN) = agentNState;
         agentMetricVeli(:, agentN) = agentNMetricVeli;
+%         plot(agentMetricVeli(1, agentN), agentMetricVeli(2, agentN), symbol(agentN))
     end
-
+    
     agentMetricVelu = siToUni(agentMetricVeli, agentMetricPosu); % Convert single integrator to unicycle
     agentMetricVelu = uniClamp(agentMetricVelu, agentMetricPosu); % Impose inter-agent barrier and field boundary
     roboDrv.set_velocities(1:numAgent, agentMetricVelu);
