@@ -20,7 +20,7 @@ function [grid] = CreateGradientMap(gridSize, tileSize, numSinks, maxMagnitude)
     y = x;
     [xg, yg] = meshgrid(x, y);
     E = xg.^2 + yg.^2;
-    sink = maxMagnitude * ((E / max(max(E)))- 1);
+    sink = 4*maxMagnitude * ((E / max(max(E)))- 1);
     
     grid = zeros(gridXWidth, gridYWidth);
     for ix = 0:gridSize(1)-1
