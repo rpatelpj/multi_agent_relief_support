@@ -74,6 +74,8 @@ for i = 1:(rad+1)
 %         unit_vec = (inds_mat(:, ind_nonzero) - [center; center])/norm(inds_mat(:, ind_nonzero) - [center; center]);
 %         sensor_reading = unit_vec*map(inds_mat(1, ind_nonzero),   inds_mat(2, ind_nonzero));
 %         sensor_reading = unit_vec;
+        vel = sensor_reading - [-xGradientMapN(center, center);
+            -yGradientMapN(center, center)]
         break;
         
     end
