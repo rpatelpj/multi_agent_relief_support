@@ -15,10 +15,10 @@ contourRes = 5; % Contour Resolution
 iteration = 2000; % Total Number of Iterations
 
 % Map
-numSink = 10; % Number of Sinks
-sinkMetricLen = 0.4; % Metric Length of Square Sink
+numSink = 5; % Number of Sinks
+sinkMetricLen = 0.2; % Metric Length of Square Sink
 sinkIdxLen = 11; % Index Length of Square Sink
-sinkDepth = 1.5; % Depth of Sink
+sinkDepth = 0.5; % Depth of Sink
 
 %% Generate Parameters
 
@@ -27,8 +27,8 @@ fieldDim = [-1.6, 1.6, -1, 1]; % Field Dimensions (xMapMetricMin, xMapMetricMax,
 [agentMetricPos0, agentState] = generateInitialConditions(numAgent, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4)); % Agents' Initial Conditions
 agentIdxVisibleApothem = floor(agentMetricVisibilityApothem.*metricToIdx) + 1; % Index Apothem of Visible Map of Agent
 %%%%%% for debugging: 
-figure(5)
-symbol = ['m*', 'c*', 'k*', 'g*', 'b*', 'r*', 'md', 'cd', 'kd', 'gd'];
+% figure(5)
+% symbol = ['m*', 'c*', 'k*', 'g*', 'b*', 'r*', 'md', 'cd', 'kd', 'gd'];
 %% Run Driver with Robotarium
 
 roboDrv = Robotarium('NumberOfRobots', numAgent, 'InitialConditions', agentMetricPos0);
@@ -45,7 +45,7 @@ currentunits = get(gca,'Units');
 set(gca, 'Units', 'Points');
 axpos = get(gca,'Position');
 set(gca, 'Units', currentunits);
-markerWidth = agentMetricVisibilityApothem/diff(xlim)*axpos(3); % Calculate Marker width in points
+markerWidth = (2*agentMetricVisibilityApothem)/diff(xlim)*axpos(3); % Calculate Marker width in points
 
 handle.SizeData = markerWidth^2;
 handle.MarkerFaceColor = [0.12,0.49,0.65];

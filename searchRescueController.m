@@ -20,7 +20,7 @@ function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAd
         agentState1Set = find(agentState == 1);
         sinkKnownSet = intersect(agentState1Set, agentAdjacentN);
         agentAdjacentNDist = vecnorm(agentMetricPos(:, sinkKnownSet) - agentMetricPos(:, agentN)); % Calculate distances between agent N and agents adjacent to agent N
-        sinkMetricDiameter = sqrt(2) .* sinkMetricLen;
+        sinkMetricDiameter = 2 * agentMetricVisibilityApothem; %sqrt(2) .* sinkMetricLen;
 
         % If true, are there no agents already at a sink, or at least is there an agent not at this sink?
         % TODO: Since sink is square, sink diameter is used for threshold distance.
@@ -44,14 +44,14 @@ end
 %% Sink Descent Algorithm
 function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN)
     agentNState = 1;
-    [rad, sensor_reading] = findSmallestInnerCircle(visibleMapN)
+    [rad, sensor_reading] = findSmallestInnerCircle(visibleMapN);
 %     [~, minVisibleMapNIdx] = min(visibleMapN, [], 'all', 'linear');
 %     [minVisibleMapNRow, minVisibleMapNCol] = ind2sub(size(visibleMapN), minVisibleMapNIdx);
 %     visibleMapNCent = round(size(visibleMapN)./2);
 %     agentNCentVec = [(minVisibleMapNCol - visibleMapNCent(2));
 %                      (minVisibleMapNRow - visibleMapNCent(1))];
-%     agentNMetricVel = agentNCentVec./(norm(agentNCentVec) + 10.^(-5));
-agentNMetricVel = sensor_reading + 10.^(-5);
+%     agentNMetricVel = 10 * agentNCentVec./(norm(agentNCentVec));
+    agentNMetricVel = sensor_reading + 10.^(-5);
     
 end
 

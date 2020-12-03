@@ -29,12 +29,12 @@ xGradientMapN = [zeros(n, 1) xGradientMapN ];
 %     end
 % end
 
-map = visibleMapN ~=0
+map = visibleMapN ~=0;
 sums = [];
 % n = floor(length(visibleMapN)/2);
 for ind = 1:(floor(length(visibleMapN)/2) - 1)
     vals = sum(map(1, 1:end)) + sum(map(end, 1:end)) + sum(map(2:end-1, 1)) + sum(map(2:end-1, end));
-    sums = [vals sums]
+    sums = [vals sums];
     map = map(2:end-1, 2:end-1);
 end
 vals = sum(map(1, 1:end)) + sum(map(end, 1:end)) + sum(map(2:end-1, 1)) + sum(map(2:end-1, end));
@@ -49,9 +49,9 @@ distances = [];
 for i = 1:(rad+1)
     if (i == 1)
         num = i*4;
-        r = [(center + rad) (center - rad)]
-        c = [center center]
-        inds_mat = [r c; c r]
+        r = [(center + rad) (center - rad)];
+        c = [center center];
+        inds_mat = [r c; c r];
     elseif(i == (rad + 1))
         r = [center-rad center + rad];
         c = [center-rad center-rad center + rad center + rad];
