@@ -12,7 +12,7 @@ function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAd
         % State 1: Descend sink
 
 	% Is agent descending sink?
-    if (agentState(agentN) == 1) && any((visibleMapN ~= 0), 'all')
+    if (agentState(1, agentN) == 1) && any((visibleMapN ~= 0), 'all')
         [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
 
     % If false, can agent see a sink?

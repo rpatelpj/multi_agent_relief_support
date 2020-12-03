@@ -12,11 +12,11 @@ gridSensor = false; % If true, use grid sensor. If false, use circular sensor.
 
 % Simulation
 contourRes = 5; % Contour Resolution
-iteration = 2000; % Total Number of Iterations
+iteration = 3000; % Total Number of Iterations
 
 % Map
-numSink = 5; % Number of Sinks
-sinkMetricLen = 0.2; % Metric Length of Square Sink
+numSink = 3; % Number of Sinks
+sinkMetricLen = .8; % Metric Length of Square Sink
 sinkIdxLen = 11; % Index Length of Square Sink
 sinkDepth = 0.5; % Depth of Sink
 
