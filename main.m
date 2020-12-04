@@ -11,7 +11,7 @@ A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of 
 % A(numAgent, 1) = 1;
 % A(1, numAgent) = 1;
 agentMetricVisibilityApothem = 0.1; % Metric Apothem of Visible Map of Agent
-gridSensorRange = true; % If true, use grid sensor range. If false, use circular sensor range.
+gridSensorRange = false; % If true, use grid sensor range. If false, use circular sensor range.
 
 % Simulation
 contourRes = 5; % Contour Resolution
@@ -59,7 +59,7 @@ set(gca, 'Units', currentunits);
 markerWidth = axpos(3).*(2.*agentMetricVisibilityApothem)/diff(xlim); % Calculate marker width in points
 handle.SizeData = markerWidth.^2;
 handle.MarkerFaceColor = [0.12, 0.49, 0.65];
-handle.MarkerFaceAlpha = 0.2;
+handle.MarkerFaceAlpha = 0.5;
 
 for k = 1:iteration
     agentMetricPosu = roboDrv.get_poses();
