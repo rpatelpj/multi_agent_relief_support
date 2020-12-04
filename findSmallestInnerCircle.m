@@ -5,29 +5,6 @@ yGradientMapN = diff(visibleMapN, 1, 1);
 xGradientMapN = diff(visibleMapN, 1, 2);
 yGradientMapN = [zeros(1, n); yGradientMapN];
 xGradientMapN = [zeros(n, 1) xGradientMapN ];
-% if mod(m, 2) == 0 || mod(n, 2) == 0
-%     if m > n
-%         if mod(m, 2) == 0
-%             % add a row of zeros
-%             visibleMapN = [visibleMapN; zeros(1, n)]
-%         else
-%             visibleMapN = [visibleMapN zeroes(m-n, m)];
-%         end
-%     else if n > m
-%             if mod(n, 2) == 0
-%                 % add a row of zeros
-%                 visibleMapN = [visibleMapN zeros(m, 1)]
-%             else
-%                 visibleMapN = [visibleMapN; zeroes(n-m, n)];
-%             end
-%         else
-%             % both are equal and even i guess
-%             visibleMapN = [visibleMapN zeros(m, 1)];
-%             visibleMapN = [visibleMapN; zeros(1, n+1)];
-%
-%         end
-%     end
-% end
 
 map = visibleMapN ~=0;
 sums = [];
@@ -75,7 +52,7 @@ for i = 1:(rad+1)
 %         sensor_reading = unit_vec*map(inds_mat(1, ind_nonzero),   inds_mat(2, ind_nonzero));
 %         sensor_reading = unit_vec;
         vel = sensor_reading - [-xGradientMapN(center, center);
-            -yGradientMapN(center, center)]
+            -yGradientMapN(center, center)];
         break;
         
     end
