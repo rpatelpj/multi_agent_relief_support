@@ -6,13 +6,16 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 
 % Agent
 numAgent = 5; % Number of Agents
-A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from)
+% A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from), Complete Graph
+A = diag(ones(1, (numAgent - 1)), 1) + diag(ones(1, (numAgent - 1)), -1); % Adjacency Matrix of Graph (info to x info from), Cycle Graph
+A(numAgent, 1) = 1;
+A(1, numAgent) = 1;
 agentMetricVisibilityApothem = 0.1; % Metric Apothem of Visible Map of Agent
 gridSensorRange = true; % If true, use grid sensor range. If false, use circular sensor range.
 
 % Simulation
 contourRes = 5; % Contour Resolution
-iteration = 1500; % Total Number of Iterations
+iteration = 3000; % Total Number of Iterations
 
 % Sink
 numSink = 5; % Number of Sinks
@@ -84,4 +87,4 @@ for k = 1:iteration
 %     drawnow; % Update visible map of agents
 end
 
-roboDrv.debug(); % Debug simulation; COMMENT WHEN SUBMITTING TO ROBOTARIUM
+% roboDrv.debug(); % Debug simulation; COMMENT WHEN SUBMITTING TO ROBOTARIUM
