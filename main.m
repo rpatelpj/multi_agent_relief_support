@@ -1,15 +1,15 @@
 %% Multi Agent Relief Support
-restoredefaultpath; close all; clear; clc;
-run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
+% restoredefaultpath; close all; clear; clc; % COMMENT WHEN SUBMITTING TO ROBOTARIUM
+% run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 
 %% Choose Parameters
 
 % Agent
-numAgent = 5; % Number of Agents
-% A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from), Complete Graph
-A = diag(ones(1, (numAgent - 1)), 1) + diag(ones(1, (numAgent - 1)), -1); % Adjacency Matrix of Graph (info to x info from), Cycle Graph
-A(numAgent, 1) = 1;
-A(1, numAgent) = 1;
+numAgent = 10; % Number of Agents
+A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from), Complete Graph
+% A = diag(ones(1, (numAgent - 1)), 1) + diag(ones(1, (numAgent - 1)), -1); % Adjacency Matrix of Graph (info to x info from), Cycle Graph
+% A(numAgent, 1) = 1;
+% A(1, numAgent) = 1;
 agentMetricVisibilityApothem = 0.1; % Metric Apothem of Visible Map of Agent
 gridSensorRange = true; % If true, use grid sensor range. If false, use circular sensor range.
 
@@ -18,7 +18,7 @@ contourRes = 5; % Contour Resolution
 iteration = 3000; % Total Number of Iterations
 
 % Sink
-numSink = 5; % Number of Sinks
+numSink = 10; % Number of Sinks
 sinkMetricLen = 0.3; % Metric Length of Square Sink
 
 % Sink, Rarely Changed
@@ -36,10 +36,6 @@ sinkMetricLen = max(sinkMetricLen, agentSize);
 [map, xMapMetricGrid, yMapMetricGrid, metricToIdx] = generateMap(fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4), numSink, sinkMetricLen, sinkIdxLen, sinkDepth); % Map (y, x)
 [agentMetricPos0, agentState] = generateInitialConditions(numAgent, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4)); % Agents' Initial Conditions
 agentIdxVisibilityApothem = floor(agentMetricVisibilityApothem.*metricToIdx) + 1; % Index Apothem of Visible Map of Agent
-
-%%%%%% for debugging:
-% figure(5)
-% symbol = ['m*', 'c*', 'k*', 'g*', 'b*', 'r*', 'md', 'cd', 'kd', 'gd'];
 
 %% Run Driver with Robotarium
 

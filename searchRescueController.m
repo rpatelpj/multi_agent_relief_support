@@ -96,6 +96,7 @@ end
 function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem)
     % Local parameters
     speed = 0.25;
+    horizMovementGain = 3;
     mapBoundaryTol = 0.3;
     xAgentMetricMin = xMapMetricMin + mapBoundaryTol;
     xAgentMetricMax = xMapMetricMax - mapBoundaryTol;
@@ -115,7 +116,7 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
 
     % Move right
     elseif (agentNState == 0.4)
-        if ((mod(round(agentNMetricPos(1), 2), agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) < xAgentMetricMax))
+        if ((mod(round(agentNMetricPos(1), 2), horizMovementGain.*agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) < xAgentMetricMax))
             agentNState = 0.4;
             agentNMetricVel = [speed; 0];
         elseif (agentNMetricPos(2) >= yAgentMetricMax)
@@ -132,7 +133,7 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
 
     % Move left
     elseif (agentNState == 0.6)
-        if ((mod(round(agentNMetricPos(1), 2), agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) > xAgentMetricMin))
+        if ((mod(round(agentNMetricPos(1), 2), horizMovementGain.*agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) > xAgentMetricMin))
             agentNState = 0.6;
             agentNMetricVel = [-speed; 0];
         elseif (agentNMetricPos(2) >= yAgentMetricMax)
