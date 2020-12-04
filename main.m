@@ -39,32 +39,34 @@ agentIdxVisibilityApothem = floor(agentMetricVisibilityApothem.*metricToIdx) + 1
 
 %% Run Driver with Robotarium
 
+% Initialize Robotarium
 roboDrv = Robotarium('NumberOfRobots', numAgent, 'InitialConditions', agentMetricPos0);
 agentMetricPosu = roboDrv.get_poses();
 roboDrv.step(); % Set agents' initial pose
 siToUni = create_si_to_uni_dynamics();
 uniClamp = create_uni_barrier_certificate_with_boundary();
 
-contour(xMapMetricGrid, yMapMetricGrid, map, contourRes); % Plot contour of map
+% Plot contour of map
+contour(xMapMetricGrid, yMapMetricGrid, map, contourRes);
 
-% handle = scatter(agentMetricPosi(1, :), agentMetricPosi(2, :), 'filled'); % Plot visible map of agents
-
-% currentunits = get(gca,'Units');
-% set(gca, 'Units', 'Points');
-% axpos = get(gca,'Position');
-% set(gca, 'Units', currentunits);
-% markerWidth = agentMetricVisibilityApothem/diff(xlim)*axpos(3); % Calculate Marker width in points
-
-% handle.SizeData = markerWidth^2;
-% handle.MarkerFaceColor = [0.12,0.49,0.65];
-% handle.MarkerFaceAlpha = 0.2;
+% Initialize plot for visible map of agents
+agentMetricPosi = agentMetricPosu(1:2, :);
+handle = scatter(agentMetricPosi(1, :), agentMetricPosi(2, :), 'filled');
+currentunits = get(gca,'Units');
+set(gca, 'Units', 'Points');
+axpos = get(gca,'Position');
+set(gca, 'Units', currentunits);
+markerWidth = axpos(3).*(2.*agentMetricVisibilityApothem)/diff(xlim); % Calculate marker width in points
+handle.SizeData = markerWidth.^2;
+handle.MarkerFaceColor = [0.12, 0.49, 0.65];
+handle.MarkerFaceAlpha = 0.2;
 
 for k = 1:iteration
     agentMetricPosu = roboDrv.get_poses();
     agentMetricPosi = agentMetricPosu(1:2, :); % Get agents' single integrator position
     agentMetricVeli = zeros(2, numAgent); % Initialize agents' single integrator velocities
 
-%     set(handle,'XData',agentMetricPosi(1, :),'YData',agentMetricPosi(2, :))
+    set(handle, 'XData', agentMetricPosi(1, :), 'YData', agentMetricPosi(2, :)); % Load agent positions for visible map plots
 
     for agentNIdx = 1:numAgent
         agentNMetricPosi = agentMetricPosi(1:2, agentNIdx);
@@ -73,14 +75,13 @@ for k = 1:iteration
         [agentNState, agentNMetricVeli] = searchRescueController(agentNIdx, agentAdjacentNIdx, visibleMapN, agentState, agentMetricPosi, fieldDim(1), fieldDim(2), fieldDim(3), fieldDim(4), metricToIdx, agentMetricVisibilityApothem, sinkMetricLen); % Execute controller
         agentState(agentNIdx) = agentNState;
         agentMetricVeli(:, agentNIdx) = agentNMetricVeli;
-%         plot(agentMetricVeli(1, agentN), agentMetricVeli(2, agentN), symbol(agentN))
     end
 
     agentMetricVelu = siToUni(agentMetricVeli, agentMetricPosu); % Convert single integrator to unicycle
     agentMetricVelu = uniClamp(agentMetricVelu, agentMetricPosu); % Impose inter-agent barrier and field boundary
     roboDrv.set_velocities(1:numAgent, agentMetricVelu);
     roboDrv.step();
-%     drawnow; % Update visible map of agents
+    drawnow; % Update visible map of agents
 end
 
 % roboDrv.debug(); % Debug simulation; COMMENT WHEN SUBMITTING TO ROBOTARIUM
