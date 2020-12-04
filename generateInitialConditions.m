@@ -8,7 +8,9 @@ function [agentMetricPos0, agentState] = generateInitialConditions(numAgent, xMa
     agentMetricPos0(3, :) = pi./2;
     
     % Choose agents' initial state
-    % [searching state, radius calculated of sink, how many more robots needed?]
-    agentState = [0.2.*ones(1, numAgent); zeros(1, numAgent); zeros(1, numAgent)];
-
+    % [searching state, radius calculated of sink, ...
+    ... how many more robots needed?, edge of sink pos, center of sink, found?]
+    agentState = [0.2.*ones(1, numAgent); zeros(1, numAgent); ...
+        zeros(2, numAgent); zeros(1, numAgent); zeros(2, numAgent); zeros(1, numAgent)];
+    
 end

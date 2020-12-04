@@ -1,5 +1,5 @@
 %% Search and Rescue Controller
-function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0, agentState, agentMetricPos, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem, sinkMetricLen)
+function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0, agentState, agentMetricPos, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem, sinkMetricLen, agentNMetricVeli)
     % Transform visible map of agent to (-y, x) from (y, x)
     visibleMapN = flipud(visibleMapN);
 
@@ -12,24 +12,68 @@ function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAd
         % State 1: Descend sink
 
 	% Is agent descending sink?
-    if (agentState(1, agentN) == 1) && any((visibleMapN ~= 0), 'all')
-        [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
-
+    if (agentState(1, agentN)  == 1) && any((visibleMapN ~= 0), 'all')
+        [agentNSearchState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
+        agentNState = zeros(8, 1);
+        agentEdgePos = agentState(3:4, agentN);
+        agentCurrPos = agentMetricPos(:, agentN)
+        % did another agent already get there? 
+        sinkCenters = agentState(6:7, :);
+        dirToSinks = vecnorm(agentMetricPos(:, agentN)*ones(1, length(agentState)) - sinkCenters);
+        [sortedSinkDistances, inds] = sort(dirToSinks);
+        if agentState(8, inds(1)) == 0 || (agentState(8, inds(1)) == 1)&&(inds(1)==agentN)
+            if (norm(agentNMetricVeli) < sqrt(2)*.03)
+                radius = agentState(2, agentN);
+                found = 1;
+            else
+                
+                found = 0;
+            end
+            radius = norm(agentEdgePos - agentCurrPos);
+            agentNState(1) = agentNSearchState;
+            agentNState(2) = radius;
+            agentNState(3:4) = agentEdgePos;
+            agentNState(5) = 0;
+            agentNState(6:7) = agentCurrPos;
+            agentNState(8) = found;
+        else
+            agentState(:, agentN) = zeros(8, 1);
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricPos0, agentMetricPos, agentState, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+        end
+        
     % If false, can agent see a sink?
     elseif any((visibleMapN ~= 0), 'all')
         agentState1Set = find(agentState == 1);
         sinkKnownSet = intersect(agentState1Set, agentAdjacentN);
         agentAdjacentNDist = vecnorm(agentMetricPos(:, sinkKnownSet) - agentMetricPos(:, agentN)); % Calculate distances between agent N and agents adjacent to agent N
         sinkMetricDiameter = 2 * agentMetricVisibilityApothem; %sqrt(2) .* sinkMetricLen;
-
+        
+        
         % If true, are there no agents already at a sink, or at least is there an agent not at this sink?
         % TODO: Since sink is square, sink diameter is used for threshold distance.
         %       This results in a bug when there is an open sink positioned close to two sinks at greater than twice sink apothem, but less than sink diameter.
         %       Agent cannot reach this open sink.
         % TODO: Realistically, agent wouldn't know sinkMetricDiameter. Replace with another metric.
         if isempty(sinkKnownSet) || (min(agentAdjacentNDist) > sinkMetricDiameter)
-            [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
+            sinkCenters = agentState(6:7, :);
+            dirToSinks = vecnorm(agentMetricPos(:, agentN)*ones(1, length(agentState)) - sinkCenters);
+            [sortedSinkDistances, inds] = sort(dirToSinks);
+            if (agentState(2, inds(1)) < sortedSinkDistances(1))&&(agentState(8, inds(1)) == 0)
+                [agentNSearchState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
 
+                radius = 0;
+                agentNState = zeros(8, 1);
+                agentEdgePos = agentMetricPos(:, agentN);
+                agentNState(1) = agentNSearchState;
+                agentNState(2) = radius;
+                agentNState(3:4) = agentEdgePos;
+                agentNState(5) = 0;
+                agentNState(6:7) = agentEdgePos;
+            else
+                [agentNSearchState, agentNMetricVel] = sinkDescentAlgorithm(-visibleMapN);
+                agentNState = zeros(8, 1);
+                agentNState(1) = agentNSearchState;
+            end
         % If false, keep moving.
         else
             [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricPos0, agentMetricPos, agentState, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
@@ -39,11 +83,12 @@ function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAd
     else
         [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricPos0, agentMetricPos, agentState, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
     end
+    
 end
 
 %% Sink Descent Algorithm
-function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN)
-    agentNState = 1;
+function [agentNSearchState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN)
+    agentNSearchState = 1;
     [rad, sensor_reading] = findSmallestInnerCircle(visibleMapN);
 %     [~, minVisibleMapNIdx] = min(visibleMapN, [], 'all', 'linear');
 %     [minVisibleMapNRow, minVisibleMapNCol] = ind2sub(size(visibleMapN), minVisibleMapNIdx);
@@ -62,72 +107,76 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricP
     boundaryTol = 0.2;
     yAgentMetricMin = yMapMetricMin + boundaryTol;
     yAgentMetricMax = yMapMetricMax - boundaryTol;
-
+    agentNState = agentState(:, agentN);
     % Move up
-    if (agentState(agentN) == 0.2)
+    if (agentNState(1)  == 0.2)
         if (agentMetricPos(2, agentN) < yAgentMetricMax)
-            agentNState = 0.2;
+            agentNState(1)  = 0.2;
             agentNMetricVel = [0; speed];
         elseif (agentNMetricPos0(1) <= 0)
-            agentNState = 0.4;
+            agentNState(1)  = 0.4;
             agentNMetricVel = [speed; 0];
         elseif (agentNMetricPos0(1) > 0)
-            agentNState = 0.6;
+            agentNState(1)  = 0.6;
             agentNMetricVel = [-speed; 0];
         else
-            agentNState = 0.6;
+            agentNState(1)  = 0.6;
             agentNMetricVel = [-speed; 0];
         end
 
     % Move right
-    elseif (agentState(agentN) == 0.4)
+    elseif (agentNState(1)  == 0.4)
         if (mod(round(agentMetricPos(1, agentN), 2), agentMetricVisibilityApothem) ~= 0)
-            agentNState = 0.4;
+            agentNState(1)  = 0.4;
             agentNMetricVel = [speed; 0];
         elseif (agentMetricPos(2, agentN) >= yAgentMetricMax)
-            agentNState = 0.8;
+            agentNState(1)  = 0.8;
             agentNMetricVel = [0; -speed];
         elseif (agentMetricPos(2, agentN) <= yAgentMetricMin)
-            agentNState = 0.2;
+            agentNState(1)  = 0.2;
             agentNMetricVel = [0; speed];
         else
-            agentNState = 0.8;
+            agentNState(1)  = 0.8;
             agentNMetricVel = [0; -speed];
         end
 
     % Move left
-    elseif (agentState(agentN) == 0.6)
+    elseif (agentNState(1)  == 0.6)
         if (mod(round(agentMetricPos(1, agentN), 2), agentMetricVisibilityApothem) ~= 0)
-            agentNState = 0.6;
+            agentNState(1)  = 0.6;
             agentNMetricVel = [-speed; 0];
         elseif (agentMetricPos(2, agentN) >= yAgentMetricMax)
-            agentNState = 0.8;
+            agentNState(1)  = 0.8;
             agentNMetricVel = [0; -speed];
         elseif (agentMetricPos(2, agentN) <= yAgentMetricMin)
-            agentNState = 0.2;
+            agentNState(1)  = 0.2;
             agentNMetricVel = [0; speed];
         else
-            agentNState = 0.2;
+            agentNState(1)  = 0.2;
             agentNMetricVel = [0; speed];
         end
 
     % Move down
-    elseif (agentState(agentN) == 0.8)
+    elseif (agentNState(1)  == 0.8)
         if (agentMetricPos(2, agentN) > yAgentMetricMin)
-            agentNState = 0.8;
+            agentNState(1)  = 0.8;
             agentNMetricVel = [0; -speed];
         elseif (agentNMetricPos0(1) <= 0)
-            agentNState = 0.4;
+            agentNState(1)  = 0.4;
             agentNMetricVel = [speed; 0];
         elseif (agentNMetricPos0(1) > 0)
-            agentNState = 0.6;
+            agentNState(1)  = 0.6;
             agentNMetricVel = [-speed; 0];
         else
-            agentNState = 0.4;
+            agentNState(1)  = 0.4;
             agentNMetricVel = [speed; 0];
         end
     else
-        agentNState = 0.2;
+        agentNState(1)  = 0.2;
         agentNMetricVel = [0; speed];
     end
+end
+%% Distaster Radius Calculation
+function [radius] = disasterSiteDistance(edgePos, currPos)
+
 end

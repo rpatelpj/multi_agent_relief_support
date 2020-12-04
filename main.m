@@ -63,10 +63,11 @@ for k = 1:iteration
         agentNMetricPos0i = agentMetricPos0(1:2, agentN);
         agentAdjacentN = find(A(:, agentN) == 1); % Get set of agents adjacent to agent N
         visibleMapN = readSensorSim(agentNMetricPosi, agentIdxVisibleApothem, map, fieldDim(1), fieldDim(3), metricToIdx, gridSensor); % Extract visible disk of agent
-        [agentNState, agentNMetricVeli] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0i, agentState, agentMetricPosi, fieldDim(3), fieldDim(4), agentMetricVisibilityApothem, sinkMetricLen); % Execute controller
-        agentState(agentN) = agentNState;
+        [agentNState, agentNMetricVeli] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0i, agentState, agentMetricPosi, fieldDim(3), fieldDim(4), agentMetricVisibilityApothem, sinkMetricLen, agentMetricVeli(:, agentN)); % Execute controller
+        agentState(:, agentN) = agentNState;
         agentMetricVeli(:, agentN) = agentNMetricVeli;
 %         plot(agentMetricVeli(1, agentN), agentMetricVeli(2, agentN), symbol(agentN))
+        
     end
     
     agentMetricVelu = siToUni(agentMetricVeli, agentMetricPosu); % Convert single integrator to unicycle

@@ -81,7 +81,7 @@ for i = 1:(rad+1)
     end
 end
 
-gain = 3;
+gain = 6;
 sensor_reading = gain*sensor_reading;
 
 end
