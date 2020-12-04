@@ -1,5 +1,5 @@
 %% Search and Rescue Controller
-function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAdjacentN, visibleMapN, agentNMetricPos0, agentState, agentMetricPos, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem, sinkMetricLen)
+function [agentNState, agentNMetricVel] = searchRescueController(agentNIdx, agentAdjacentNIdx, visibleMapN, agentState, agentMetricPos, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, metricToIdx, agentMetricVisibilityApothem, sinkMetricLen)
     % Transform visible map of agent to (-y, x) from (y, x)
     visibleMapN = flipud(visibleMapN);
 
@@ -11,123 +11,156 @@ function [agentNState, agentNMetricVel] = searchRescueController(agentN, agentAd
             % State 0.8: Move down
         % State 1: Descend sink
 
-	% Is agent descending sink?
-    if (agentState(agentN) == 1) && any((visibleMapN ~= 0), 'all')
-        [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
+    % See a sink? If true, attempt to descend sink.
+    if any((visibleMapN ~= 0), 'all')
+        [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNIdx, agentAdjacentNIdx, visibleMapN, agentMetricPos, xMapMetricMin, yMapMetricMin, metricToIdx, sinkMetricLen);
 
-    % If false, can agent see a sink?
-    elseif any((visibleMapN ~= 0), 'all')
-        agentState1Set = find(agentState == 1);
-        sinkKnownSet = intersect(agentState1Set, agentAdjacentN);
-        agentAdjacentNDist = vecnorm(agentMetricPos(:, sinkKnownSet) - agentMetricPos(:, agentN)); % Calculate distances between agent N and agents adjacent to agent N
-        sinkMetricDiameter = sqrt(2) .* sinkMetricLen;
-
-        % If true, are there no agents already at a sink, or at least is there an agent not at this sink?
-        % TODO: Since sink is square, sink diameter is used for threshold distance.
-        %       This results in a bug when there is an open sink positioned close to two sinks at greater than twice sink apothem, but less than sink diameter.
-        %       Agent cannot reach this open sink.
-        % TODO: Realistically, agent wouldn't know sinkMetricDiameter. Replace with another metric.
-        if isempty(sinkKnownSet) || (min(agentAdjacentNDist) > sinkMetricDiameter)
-            [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN);
-
-        % If false, keep moving.
-        else
-            [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricPos0, agentMetricPos, agentState, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+        % If no open sink, keep moving.
+        if (agentNState == 0)
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentMetricPos(:, agentNIdx), agentState(:, agentNIdx), xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
         end
 
-    % If false, keep moving.
+    % If no visible sink, keep moving.
     else
-        [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricPos0, agentMetricPos, agentState, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+        [agentNState, agentNMetricVel] = routingAlgorithm(agentMetricPos(:, agentNIdx), agentState(:, agentNIdx), xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
     end
 end
 
 %% Sink Descent Algorithm
-function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(visibleMapN)
-    agentNState = 1;
-    [rad, sensor_reading] = findSmallestInnerCircle(visibleMapN)
-%     [~, minVisibleMapNIdx] = min(visibleMapN, [], 'all', 'linear');
-%     [minVisibleMapNRow, minVisibleMapNCol] = ind2sub(size(visibleMapN), minVisibleMapNIdx);
-%     visibleMapNCent = round(size(visibleMapN)./2);
-%     agentNCentVec = [(minVisibleMapNCol - visibleMapNCent(2));
-%                      (minVisibleMapNRow - visibleMapNCent(1))];
-%     agentNMetricVel = agentNCentVec./(norm(agentNCentVec) + 10.^(-5));
-agentNMetricVel = sensor_reading + 10.^(-5);
-    
+function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNIdx, agentAdjacentNIdx, visibleMapN, agentMetricPos, xMapMetricMin, yMapMetricMin, metricToIdx, sinkMetricLen)
+    % Find lowest point of visible portion of sink(s) relative to visible map in index
+	[sinkIdxMinVisibleMapN, ~] = min(visibleMapN, [], 'all', 'linear');
+	sinkIdxMinVisibleMapNIdx = find(visibleMapN == sinkIdxMinVisibleMapN);
+	[sinkIdxMinVisibleMapNRow, sinkIdxMinVisibleMapNCol] = ind2sub(size(visibleMapN), sinkIdxMinVisibleMapNIdx);
+
+    % Find agent N position relative to visible map in index
+    agentNIdxPosRelVisibleMapN = round(size(visibleMapN)./2);
+
+    % Convert to lowest point of visible portion of sink(s) relative to visible map in metric
+    idxToMetric = 1./metricToIdx;
+    xSinkMetricMinRelVisibleMapN = (sinkIdxMinVisibleMapNCol - 1).*idxToMetric + xMapMetricMin; % Accuracy loss due to nonlinear transform
+    ySinkMetricMinRelVisibleMapN = (sinkIdxMinVisibleMapNRow - 1).*idxToMetric + yMapMetricMin; % Accuracy loss due to nonlinear transform
+
+    % Convert to agent N position relative to visible map in metric
+    xAgentMetricPosRelVisibleMapN = (agentNIdxPosRelVisibleMapN(2) - 1)./metricToIdx + xMapMetricMin; % Accuracy loss due to nonlinear transform
+    yAgentMetricPosRelVisibleMapN = (agentNIdxPosRelVisibleMapN(1) - 1)./metricToIdx + yMapMetricMin; % Accuracy loss due to nonlinear transform
+
+    % Calculate vector(s) between lowest point of visible sink(s) and agent M
+    agentNSinkMetricVec = [(xSinkMetricMinRelVisibleMapN' - xAgentMetricPosRelVisibleMapN);
+                           (ySinkMetricMinRelVisibleMapN' - yAgentMetricPosRelVisibleMapN)];
+
+    % Choose lowest point of visible sink closest to agent N
+    [~, minAgentNSinkMetricVecIdx] = min(vecnorm(agentNSinkMetricVec));
+    agentNSinkMetricVec = agentNSinkMetricVec(:, minAgentNSinkMetricVecIdx);
+
+    % Find absolute sink position
+    sinkMapMetricPos = agentNSinkMetricVec + agentMetricPos(:, agentNIdx);
+
+    % Find minimum distance between sink and all agents adjacent to agent N and agent N
+    agentSet = sort([agentNIdx; agentAdjacentNIdx]);
+    agentSinkDist = vecnorm(sinkMapMetricPos - agentMetricPos);
+    [minAgentAdjacentNSinkDist, ~] = min(agentSinkDist(:, agentSet));
+    minAgentAdjacentNSinkDistIdx = find(agentSinkDist == minAgentAdjacentNSinkDist);
+
+    % Is agent N closest to sink?
+    if (minAgentAdjacentNSinkDistIdx == agentNIdx)
+        % Find "agent(s) nearby agent N and adjacent to agent N"
+        agentNAgentAdjacentNMetricDist = vecnorm(agentMetricPos(:, agentAdjacentNIdx) - agentMetricPos(:, agentNIdx));
+        agentNearbyAdjacentNIdx = find(agentNAgentAdjacentNMetricDist <= sinkMetricLen);
+        agentNearbyAdjacentNMetricPos = agentMetricPos(:, agentNearbyAdjacentNIdx);
+        
+        % Calculate direction overlap between (agent N to "agent(s) nearby agent N and adjacent to agent N") and (agent N to sink)
+        agentNAgentNearbyAdjacentNMetricVec = agentNearbyAdjacentNMetricPos - agentMetricPos(:, agentNIdx);
+        agentNSinkDotAgentNAgentNearbyAdjacentN = (agentNSinkMetricVec./vecnorm(agentNSinkMetricVec))'*(agentNAgentNearbyAdjacentNMetricVec./vecnorm(agentNAgentNearbyAdjacentNMetricVec));
+        [minAgentNSinkDotAgentNAgentNearbyAdjacentN, ~] = min(agentNSinkDotAgentNAgentNearbyAdjacentN, [], 'all', 'linear');
+
+        % Are there any agents nearby agent N and adjacent to agent N? Is the "agent nearby agent N and adjacent to agent N" not in the same direction as the sink? If true, descend sink.
+        if (isempty(minAgentNSinkDotAgentNAgentNearbyAdjacentN) || minAgentNSinkDotAgentNAgentNearbyAdjacentN <= 0)
+            agentNState =  1;
+            agentNMetricVel = agentNSinkMetricVec;
+
+        % If false, do not descend sink.
+        else
+            agentNState = 0;
+            agentNMetricVel = [];
+        end
+
+    % If false, do not descend sink.
+    else
+        agentNState = 0;
+        agentNMetricVel = [];
+    end
 end
 
 %% Routing Algorithm
-function [agentNState, agentNMetricVel] = routingAlgorithm(agentN, agentNMetricPos0, agentMetricPos, agentState, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem)
+function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem)
     % Local parameters
     speed = 0.25;
-    boundaryTol = 0.2;
-    yAgentMetricMin = yMapMetricMin + boundaryTol;
-    yAgentMetricMax = yMapMetricMax - boundaryTol;
+    mapBoundaryTol = 0.3;
+    xAgentMetricMin = xMapMetricMin + mapBoundaryTol;
+    xAgentMetricMax = xMapMetricMax - mapBoundaryTol;
+    yAgentMetricMin = yMapMetricMin + mapBoundaryTol;
+    yAgentMetricMax = yMapMetricMax - mapBoundaryTol;
 
     % Move up
-    if (agentState(agentN) == 0.2)
-        if (agentMetricPos(2, agentN) < yAgentMetricMax)
+    if (agentNState == 0.2)
+        if (agentNMetricPos(2) < yAgentMetricMax)
             agentNState = 0.2;
             agentNMetricVel = [0; speed];
-        elseif (agentNMetricPos0(1) <= 0)
-            agentNState = 0.4;
-            agentNMetricVel = [speed; 0];
-        elseif (agentNMetricPos0(1) > 0)
-            agentNState = 0.6;
-            agentNMetricVel = [-speed; 0];
         else
-            agentNState = 0.6;
-            agentNMetricVel = [-speed; 0];
+            routingState = [0.4, 0.6];
+            agentNState = routingState(randi([1, 2], 1));
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
         end
 
     % Move right
-    elseif (agentState(agentN) == 0.4)
-        if (mod(round(agentMetricPos(1, agentN), 2), agentMetricVisibilityApothem) ~= 0)
+    elseif (agentNState == 0.4)
+        if ((mod(round(agentNMetricPos(1), 2), agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) < xAgentMetricMax))
             agentNState = 0.4;
             agentNMetricVel = [speed; 0];
-        elseif (agentMetricPos(2, agentN) >= yAgentMetricMax)
+        elseif (agentNMetricPos(2) >= yAgentMetricMax)
             agentNState = 0.8;
             agentNMetricVel = [0; -speed];
-        elseif (agentMetricPos(2, agentN) <= yAgentMetricMin)
+        elseif (agentNMetricPos(2) <= yAgentMetricMin)
             agentNState = 0.2;
             agentNMetricVel = [0; speed];
         else
-            agentNState = 0.8;
-            agentNMetricVel = [0; -speed];
+            routingState = [0.2, 0.6, 0.8];
+            agentNState = routingState(randi([1, 3], 1));
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
         end
 
     % Move left
-    elseif (agentState(agentN) == 0.6)
-        if (mod(round(agentMetricPos(1, agentN), 2), agentMetricVisibilityApothem) ~= 0)
+    elseif (agentNState == 0.6)
+        if ((mod(round(agentNMetricPos(1), 2), agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) > xAgentMetricMin))
             agentNState = 0.6;
             agentNMetricVel = [-speed; 0];
-        elseif (agentMetricPos(2, agentN) >= yAgentMetricMax)
+        elseif (agentNMetricPos(2) >= yAgentMetricMax)
             agentNState = 0.8;
             agentNMetricVel = [0; -speed];
-        elseif (agentMetricPos(2, agentN) <= yAgentMetricMin)
+        elseif (agentNMetricPos(2) <= yAgentMetricMin)
             agentNState = 0.2;
             agentNMetricVel = [0; speed];
         else
-            agentNState = 0.2;
-            agentNMetricVel = [0; speed];
+            routingState = [0.2, 0.4, 0.8];
+            agentNState = routingState(randi([1, 3], 1));
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
         end
 
     % Move down
-    elseif (agentState(agentN) == 0.8)
-        if (agentMetricPos(2, agentN) > yAgentMetricMin)
+    elseif (agentNState == 0.8)
+        if (agentNMetricPos(2) > yAgentMetricMin)
             agentNState = 0.8;
             agentNMetricVel = [0; -speed];
-        elseif (agentNMetricPos0(1) <= 0)
-            agentNState = 0.4;
-            agentNMetricVel = [speed; 0];
-        elseif (agentNMetricPos0(1) > 0)
-            agentNState = 0.6;
-            agentNMetricVel = [-speed; 0];
         else
-            agentNState = 0.4;
-            agentNMetricVel = [speed; 0];
+            routingState = [0.4, 0.6];
+            agentNState = routingState(randi([1, 2], 1));
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+
         end
     else
-        agentNState = 0.2;
-        agentNMetricVel = [0; speed];
+        routingState = [0.2, 0.4, 0.6, 0.8];
+        agentNState = routingState(randi([1, 4], 1));
+        [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
     end
 end

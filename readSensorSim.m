@@ -1,5 +1,5 @@
 %% Read Sensor Simulation
-function visibleMap = readSensorSim(agentMetricPosi, agentIdxVisibilityApothem, map, xMapMetricMin, yMapMetricMin, metricToIdx, gridSensor)
+function visibleMap = readSensorSim(agentMetricPosi, agentIdxVisibilityApothem, map, xMapMetricMin, yMapMetricMin, metricToIdx, gridSensorRange)
     % Convert agent metric position to agent index position
     xAgentNMetricPos = agentMetricPosi(1);
     yAgentNMetricPos = agentMetricPosi(2);
@@ -52,9 +52,12 @@ function visibleMap = readSensorSim(agentMetricPosi, agentIdxVisibilityApothem, 
     % Assemble visible map of agent
     visibleMap = zeros(length(xFullVisibleMapMin:xFullVisibleMapMax), length(yFullVisibleMapMin:yFullVisibleMapMax));
     map = flipud(map); % Transform map to (-y, x) from (y, x)
-    if gridSensor
+
+    % Create visible map using grid sensor range?
+    if (gridSensorRange == true)
         visibleMap(yVisibleMapMin:yVisibleMapMax, xVisibleMapMin:xVisibleMapMax) = map(yAgentIdxMin:yAgentIdxMax, xAgentIdxMin:xAgentIdxMax);
-    % Sensor region is a circle
+
+    % If false, create visible map using circular sensor range.
     else
         % Create a mesh over the entire map
         [xMesh, yMesh] = meshgrid(yVisibleMapMin:yVisibleMapMax, xVisibleMapMin:xVisibleMapMax);
@@ -63,5 +66,6 @@ function visibleMap = readSensorSim(agentMetricPosi, agentIdxVisibilityApothem, 
         map(sensorRegion == 0) = 0;
         visibleMap(yVisibleMapMin:yVisibleMapMax, xVisibleMapMin:xVisibleMapMax) = map(yAgentIdxMin:yAgentIdxMax, xAgentIdxMin:xAgentIdxMax);
     end
+
     visibleMap = flipud(visibleMap); % Transform visible map of agent to (y, x) from (-y, x)
 end
