@@ -1,33 +1,33 @@
 %% Search and Rescue Controller
-function [agentNState, agentNMetricVel] = searchRescueController(agentNIdx, agentAdjacentNIdx, visibleMapN, agentState, agentMetricPos, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, metricToIdx, agentMetricVisibilityApothem, sinkMetricLen)
+function [agentNStateNext, agentNMetricVel] = searchRescueController(agentNMetricPos, agentNState, visibleMapN, agentAdjacentNMetricPos, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, metricToIdx, agentMetricSensingRadius, sinkMetricLen)
     % Transform visible map of agent to (-y, x) from (y, x)
     visibleMapN = flipud(visibleMapN);
 
     % State Machine
         % State 0.x: Search field
-            % State 0.2: Move up
-            % State 0.4: Move right
-            % State 0.6: Move left
-            % State 0.8: Move down
+            % State 0.2: Move +y direction
+            % State 0.4: Move +x direction
+            % State 0.6: Move -x direction
+            % State 0.8: Move -y direction
         % State 1: Descend sink
 
     % See a sink? If true, attempt to descend sink.
     if any((visibleMapN ~= 0), 'all')
-        [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNIdx, agentAdjacentNIdx, visibleMapN, agentMetricPos, xMapMetricMin, yMapMetricMin, metricToIdx, sinkMetricLen);
+        [agentNStateNext, agentNMetricVel] = sinkDescentAlgorithm(agentNMetricPos, visibleMapN, agentAdjacentNMetricPos, xMapMetricMin, yMapMetricMin, metricToIdx, sinkMetricLen);
 
-        % If no open sink, keep moving.
-        if (agentNState == 0)
-            [agentNState, agentNMetricVel] = routingAlgorithm(agentMetricPos(:, agentNIdx), agentState(:, agentNIdx), xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+        % If no open sink, continue to search field.
+        if (agentNStateNext == 0)
+            [agentNStateNext, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, agentMetricSensingRadius, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax);
         end
 
-    % If no visible sink, keep moving.
+    % If no visible sink, continue to search field.
     else
-        [agentNState, agentNMetricVel] = routingAlgorithm(agentMetricPos(:, agentNIdx), agentState(:, agentNIdx), xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+        [agentNStateNext, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, agentMetricSensingRadius, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax);
     end
 end
 
 %% Sink Descent Algorithm
-function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNIdx, agentAdjacentNIdx, visibleMapN, agentMetricPos, xMapMetricMin, yMapMetricMin, metricToIdx, sinkMetricLen)
+function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNMetricPos, visibleMapN, agentAdjacentNMetricPos, xMapMetricMin, yMapMetricMin, metricToIdx, sinkMetricLen)
     % Find lowest point of visible portion of sink(s) relative to visible map in index
 	[sinkIdxMinVisibleMapN, ~] = min(visibleMapN, [], 'all', 'linear');
 	sinkIdxMinVisibleMapNIdx = find(visibleMapN == sinkIdxMinVisibleMapN);
@@ -54,28 +54,27 @@ function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNIdx, agentA
     agentNSinkMetricVec = agentNSinkMetricVec(:, minAgentNSinkMetricVecIdx);
 
     % Find absolute sink position
-    sinkMapMetricPos = agentNSinkMetricVec + agentMetricPos(:, agentNIdx);
+    sinkMapMetricPos = agentNSinkMetricVec + agentNMetricPos;
 
     % Find minimum distance between sink and all agents adjacent to agent N and agent N
-    agentSet = sort([agentNIdx; agentAdjacentNIdx]);
-    agentSinkDist = vecnorm(sinkMapMetricPos - agentMetricPos);
-    [minAgentAdjacentNSinkDist, ~] = min(agentSinkDist(:, agentSet));
-    minAgentAdjacentNSinkDistIdx = find(agentSinkDist == minAgentAdjacentNSinkDist);
+    agentSetMetricPos = [agentNMetricPos, agentAdjacentNMetricPos];
+    agentSetSinkDist = vecnorm(sinkMapMetricPos - agentSetMetricPos);
+    [minAgentSinkDist, ~] = min(agentSetSinkDist);
+    minAgentSetSinkDistIdx = find(agentSetSinkDist == minAgentSinkDist);
 
-    % Is agent N closest to sink?
-    if (minAgentAdjacentNSinkDistIdx == agentNIdx)
-        % Find "agent(s) nearby agent N and adjacent to agent N"
-        agentNAgentAdjacentNMetricDist = vecnorm(agentMetricPos(:, agentAdjacentNIdx) - agentMetricPos(:, agentNIdx));
-        agentNearbyAdjacentNIdx = find(agentNAgentAdjacentNMetricDist <= sinkMetricLen);
-        agentNearbyAdjacentNMetricPos = agentMetricPos(:, agentNearbyAdjacentNIdx);
-        
-        % Calculate direction overlap between (agent N to "agent(s) nearby agent N and adjacent to agent N") and (agent N to sink)
-        agentNAgentNearbyAdjacentNMetricVec = agentNearbyAdjacentNMetricPos - agentMetricPos(:, agentNIdx);
-        agentNSinkDotAgentNAgentNearbyAdjacentN = (agentNSinkMetricVec./vecnorm(agentNSinkMetricVec))'*(agentNAgentNearbyAdjacentNMetricVec./vecnorm(agentNAgentNearbyAdjacentNMetricVec));
-        [minAgentNSinkDotAgentNAgentNearbyAdjacentN, ~] = min(agentNSinkDotAgentNAgentNearbyAdjacentN, [], 'all', 'linear');
+    % Is agent N one of the closest to the sink?
+    if any(minAgentSetSinkDistIdx == 1)
+        % Find distance to "agent(s) nearby agent N and adjacent to agent N"
+        agentNAgentAdjacentNMetricVec = agentAdjacentNMetricPos - agentNMetricPos;
+        agentNAgentAdjacentNMetricDist = vecnorm(agentNAgentAdjacentNMetricVec);
+        agentNAgentNearbyNMetricVec = agentNAgentAdjacentNMetricVec(:, agentNAgentAdjacentNMetricDist <= sinkMetricLen);
 
-        % Are there any agents nearby agent N and adjacent to agent N? Is the "agent nearby agent N and adjacent to agent N" not in the same direction as the sink? If true, descend sink.
-        if (isempty(minAgentNSinkDotAgentNAgentNearbyAdjacentN) || minAgentNSinkDotAgentNAgentNearbyAdjacentN <= 0)
+        % Find smallest direction overlap between (agent N to "agent(s) nearby agent N and adjacent to agent N") and (agent N to sink)
+        agentNSinkDotAgentNAgentNearbyN = (agentNSinkMetricVec./vecnorm(agentNSinkMetricVec))'*(agentNAgentNearbyNMetricVec./vecnorm(agentNAgentNearbyNMetricVec));
+        [minAgentNSinkDotAgentNAgentNearbyN, ~] = min(agentNSinkDotAgentNAgentNearbyN);
+
+        % Are there any agents nearby agent N and adjacent to agent N? Is the "agent nearby agent N and adjacent to agent N" not in the same direction as the sink from the perspective of agent N? If true, descend sink.
+        if (isempty(minAgentNSinkDotAgentNAgentNearbyN) || minAgentNSinkDotAgentNAgentNearbyN <= 0)
             agentNState =  1;
             agentNMetricVel = agentNSinkMetricVec;
 
@@ -93,7 +92,7 @@ function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNIdx, agentA
 end
 
 %% Routing Algorithm
-function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem)
+function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, agentMetricSensingRadius, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax)
     % Local parameters
     speed = 0.25;
     horizMovementGain = 3;
@@ -103,7 +102,7 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
     yAgentMetricMin = yMapMetricMin + mapBoundaryTol;
     yAgentMetricMax = yMapMetricMax - mapBoundaryTol;
 
-    % Move up
+    % Move +y direction
     if (agentNState == 0.2)
         if (agentNMetricPos(2) < yAgentMetricMax)
             agentNState = 0.2;
@@ -111,12 +110,12 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
         else
             routingState = [0.4, 0.6];
             agentNState = routingState(randi([1, 2], 1));
-            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricSensingRadius);
         end
 
-    % Move right
+    % Move +x direction
     elseif (agentNState == 0.4)
-        if ((mod(round(agentNMetricPos(1), 2), horizMovementGain.*agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) < xAgentMetricMax))
+        if ((mod(round(agentNMetricPos(1), 2), horizMovementGain.*agentMetricSensingRadius) ~= 0) && (agentNMetricPos(1) < xAgentMetricMax))
             agentNState = 0.4;
             agentNMetricVel = [speed; 0];
         elseif (agentNMetricPos(2) >= yAgentMetricMax)
@@ -128,12 +127,12 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
         else
             routingState = [0.2, 0.6, 0.8];
             agentNState = routingState(randi([1, 3], 1));
-            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricSensingRadius);
         end
 
-    % Move left
+    % Move -x direction
     elseif (agentNState == 0.6)
-        if ((mod(round(agentNMetricPos(1), 2), horizMovementGain.*agentMetricVisibilityApothem) ~= 0) && (agentNMetricPos(1) > xAgentMetricMin))
+        if ((mod(round(agentNMetricPos(1), 2), horizMovementGain.*agentMetricSensingRadius) ~= 0) && (agentNMetricPos(1) > xAgentMetricMin))
             agentNState = 0.6;
             agentNMetricVel = [-speed; 0];
         elseif (agentNMetricPos(2) >= yAgentMetricMax)
@@ -145,10 +144,10 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
         else
             routingState = [0.2, 0.4, 0.8];
             agentNState = routingState(randi([1, 3], 1));
-            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricSensingRadius);
         end
 
-    % Move down
+    % Move -y direction
     elseif (agentNState == 0.8)
         if (agentNMetricPos(2) > yAgentMetricMin)
             agentNState = 0.8;
@@ -156,12 +155,12 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
         else
             routingState = [0.4, 0.6];
             agentNState = routingState(randi([1, 2], 1));
-            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+            [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricSensingRadius);
 
         end
     else
         routingState = [0.2, 0.4, 0.6, 0.8];
         agentNState = routingState(randi([1, 4], 1));
-        [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricVisibilityApothem);
+        [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agentNState, xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax, agentMetricSensingRadius);
     end
 end
