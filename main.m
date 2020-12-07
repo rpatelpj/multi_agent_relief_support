@@ -5,7 +5,7 @@ run('setup.m'); % COMMENT WHEN SUBMITTING TO ROBOTARIUM
 %% Choose Parameters
 
 % Agent
-numAgent = 10; % Number of Agents
+numAgent = 5; % Number of Agents
 A = ones(1, numAgent)'*ones(1, numAgent) - eye(numAgent); % Adjacency Matrix of Graph (info to x info from), Complete Graph
 g = 'K'; % Graph Type Indicator, Complete Graph
 % A = diag(ones(1, (numAgent - 1)), 1) + diag(ones(1, (numAgent - 1)), -1); % Adjacency Matrix of Graph (info to x info from), Cycle Graph
@@ -15,14 +15,14 @@ g = 'K'; % Graph Type Indicator, Complete Graph
 agentMetricSensingRadius = 0.1; % Metric Agent Sensing Radius
 
 % Sink
-numSink = 10; % Number of Sinks
+numSink = 5; % Number of Sinks
 sinkMetricLen = 0.3; % Metric Length of Square Sink
 sinkIdxLen = 11; % Index Length of Square Sink
 sinkDepth = 1.5; % Depth of Sink
 
 % Simulation
 contourRes = 5; % Contour Resolution
-iteration = 1000; % Total Number of Iterations
+iteration = 1500; % Total Number of Iterations
 
 % Functionality
 rng('shuffle'); % Use RNG based on current system time
@@ -44,9 +44,9 @@ agentIdxSensingRadius = floor(agentMetricSensingRadius.*metricToIdx) + 1; % Inde
 %% Run Driver with Robotarium
 
 % Initialize Robotarium
-roboDrv = Robotarium('NumberOfRobots', numAgent, 'InitialConditions', agentMetricPos0);
-agentMetricPosu = roboDrv.get_poses();
-roboDrv.step(); % Set agents' initial pose
+agentDriver = Robotarium('NumberOfRobots', numAgent, 'InitialConditions', agentMetricPos0);
+agentMetricPosu = agentDriver.get_poses();
+agentDriver.step(); % Set agents' initial pose
 siToUni = create_si_to_uni_dynamics();
 uniClamp = create_uni_barrier_certificate_with_boundary();
 
@@ -73,11 +73,11 @@ if (export)
     open(vid);
     writeVideo(vid, getframe(gcf));
 
-    exportgraphics(['images/sar+t_0+a_' num2str(numAgent) '+s_' num2str(numSink) '+amsr_' num2str(agentMetricSensingRadius) '+sml_' num2str(sinkMetricLen) '+g_' g '.mp4'], 'Resolution', 500);
+    exportgraphics(agentDriver.figure_handle, ['images/sar+t_0+a_' num2str(numAgent) '+s_' num2str(numSink) '+amsr_' num2str(agentMetricSensingRadius) '+sml_' num2str(sinkMetricLen) '+g_' g '.png'], 'Resolution', 500);
 end
 
 for k = 1:iteration
-    agentMetricPosu = roboDrv.get_poses();
+    agentMetricPosu = agentDriver.get_poses();
     agentMetricPosi = agentMetricPosu(1:2, :); % Get agents' single integrator position
     agentMetricVeli = zeros(2, numAgent); % Initialize agents' single integrator velocities
 
@@ -94,16 +94,19 @@ for k = 1:iteration
 
     agentMetricVelu = siToUni(agentMetricVeli, agentMetricPosu); % Convert single integrator to unicycle
     agentMetricVelu = uniClamp(agentMetricVelu, agentMetricPosu); % Impose inter-agent barrier and field boundary
-    roboDrv.set_velocities(1:numAgent, agentMetricVelu);
-    roboDrv.step();
+    agentDriver.set_velocities(1:numAgent, agentMetricVelu);
+    agentDriver.step();
     drawnow; % Update visible map of agents
+    if (export)
+        writeVideo(vid, getframe(agentDriver.figure_handle)); % Add frame to video
+    end
 end
 
 % Finalize video and export image of final agent poses
 if (export)
     close(vid);
 
-    exportgraphics(['images/sar+t_f+a_' num2str(numAgent) '+s_' num2str(numSink) '+amsr_' num2str(agentMetricSensingRadius) '+sml_' num2str(sinkMetricLen) '+g_' g '.mp4'], 'Resolution', 500);
+    exportgraphics(agentDriver.figure_handle, ['images/sar+t_f+a_' num2str(numAgent) '+s_' num2str(numSink) '+amsr_' num2str(agentMetricSensingRadius) '+sml_' num2str(sinkMetricLen) '+g_' g '.png'], 'Resolution', 500);
 end
 
-roboDrv.debug(); % Debug simulation; COMMENT WHEN SUBMITTING TO ROBOTARIUM
+agentDriver.debug(); % Debug simulation; COMMENT WHEN SUBMITTING TO ROBOTARIUM
