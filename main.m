@@ -26,13 +26,13 @@ iteration = 1500; % Total Number of Iterations
 
 % Functionality
 rng('shuffle'); % Use RNG based on current system time
-export = true;
+export = false;
 
 %% Robotarium Parameters
 
 fieldDim = [-1.6, 1.6, -1, 1]; % Field Dimensions (xMapMetricMin, xMapMetricMax, yMapMetricMin, yMapMetricMax), ARobotarium.boundaries
 agentSize = 0.11; % Size of Agent, ARobotarium.robot_diameter
-agentAntiCollisionTol = 0.02; % Minimum Distance between Agents
+agentAntiCollisionTol = 0.04; % Minimum Distance between Agents
 sinkMetricLen = max(sinkMetricLen, agentSize + agentAntiCollisionTol); % Avoid multiple sinks within agent size
 
 %% Generate Parameters

@@ -96,7 +96,7 @@ function [agentNState, agentNMetricVel] = routingAlgorithm(agentNMetricPos, agen
     % Local parameters
     speed = 0.25;
     horizMovementGain = 3;
-    mapBoundaryTol = 0.3;
+    mapBoundaryTol = 0.15;
     xAgentMetricMin = xMapMetricMin + mapBoundaryTol;
     xAgentMetricMax = xMapMetricMax - mapBoundaryTol;
     yAgentMetricMin = yMapMetricMin + mapBoundaryTol;
