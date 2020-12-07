@@ -71,10 +71,10 @@ function [agentNState, agentNMetricVel] = sinkDescentAlgorithm(agentNMetricPos, 
 
         % Find smallest direction overlap between (agent N to "agent(s) nearby agent N and adjacent to agent N") and (agent N to sink)
         agentNSinkDotAgentNAgentNearbyN = (agentNSinkMetricVec./vecnorm(agentNSinkMetricVec))'*(agentNAgentNearbyNMetricVec./vecnorm(agentNAgentNearbyNMetricVec));
-        [minAgentNSinkDotAgentNAgentNearbyN, ~] = min(agentNSinkDotAgentNAgentNearbyN);
+        [maxAgentNSinkDotAgentNAgentNearbyN, ~] = max(agentNSinkDotAgentNAgentNearbyN);
 
         % Are there any agents nearby agent N and adjacent to agent N? Is the "agent nearby agent N and adjacent to agent N" not in the same direction as the sink from the perspective of agent N? If true, descend sink.
-        if (isempty(minAgentNSinkDotAgentNAgentNearbyN) || minAgentNSinkDotAgentNAgentNearbyN <= 0)
+        if (isempty(maxAgentNSinkDotAgentNAgentNearbyN) || maxAgentNSinkDotAgentNAgentNearbyN <= 0)
             agentNState =  1;
             agentNMetricVel = agentNSinkMetricVec;
 
